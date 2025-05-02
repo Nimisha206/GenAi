@@ -1,0 +1,8 @@
+openai
+langchain
+flask
+python-dotenv
+pyPDF2
+
+
+-e .
