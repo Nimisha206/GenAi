@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MCQ Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212e1;
+            margin: 0;
+            padding: 0;
+            color: #e0e0e0;
+        }
+
+        header {
+            background-color: #1f1f1f;
+            color: #ffffff;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        nav a {
+            color: #bbbbbb;
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            color: #ffffff;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #1e1e1e;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            text-align: center;
+            color: #ffffff;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            color: #cccccc;
+            font-weight: 600;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        input[type="number"],
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 16px;
+            background-color: #2c2c2c;
+            color: #f0f0f0;
+        }
+
+        input[type="file"]::file-selector-button {
+            background-color: #444;
+            color: #eee;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background-color: #666;
+        }
+
+        button {
+            background-color: #2979ff;
+            color: white;
+            border: none;
+            margin-top: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #1565c0;
+        }
+
+        .results {
+            margin-top: 40px;
+        }
+
+        .mcq-card {
+            background: #2a2a2a;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 5px solid #2979ff;
+        }
+
+        .review {
+            background: #333;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: #cddc39;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .footer {
+            text-align: center;
+            color: #777;
+            margin: 50px auto 20px auto;
+            font-size: 14px;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        strong {
+            color: #90caf9;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header Section -->
+<header>
+    <h1>MCQ Generator</h1>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+    </nav>
+</header>
+
+<!-- Main Content -->
+<div class="container">
+    <h2>📄 Upload File & Generate MCQs</h2>
+    <form id="mcqForm">
+        <label for="file">Upload PDF or TXT:</label>
+        <input type="file" name="file" id="file" required>
+
+        <label for="number">No. of MCQs:</label>
+        <input type="number" name="number" id="number" required>
+
+        <label for="subject">Subject:</label>
+        <input type="text" name="subject" id="subject" required>
+
+        <label for="tone">Tone:</label>
+        <input type="text" name="tone" id="tone" value="Simple" required>
+
+        <button type="submit">Generate MCQs</button>
+    </form>
+
+    <div class="loader" id="loader">Generating MCQs, please wait...</div>
+
+    <div class="results" id="results"></div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    &copy; 2025 MCQ Generator App | Built with Flask, HTML, JS
+</div>
+
+<script>
+    document.getElementById('mcqForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const formData = new FormData(form);
+        const loader = document.getElementById('loader');
+        const results = document.getElementById('results');
+        results.innerHTML = '';
+        loader.style.display = 'block';
+
+        try {
+            const response = await fetch('/generate', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            loader.style.display = 'none';
+
+            if (data.error) {
+                results.innerHTML = `<p style="color:red;">${data.error}</p>`;
+                return;
+            }
+
+            const quizArray = data.quiz.flat();
+            const reviewArray = data.review.flat();
+
+            quizArray.forEach((qObj) => {
+                const mcqs = JSON.parse(qObj.replace(/'/g, '"'));
+                for (let key in mcqs) {
+                    const mcq = mcqs[key];
+                    const options = mcq.options;
+                    let html = `<div class="mcq-card"><strong>Q${mcq.no}:</strong> ${mcq.mcq}<br><ul>`;
+                    for (let opt in options) {
+                        html += `<li><strong>${opt}.</strong> ${options[opt]}</li>`;
+                    }
+                    html += `</ul><strong>Answer:</strong> ${mcq.correct}</div>`;
+                    results.innerHTML += html;
+                }
+            });
+
+            reviewArray.forEach((review) => {
+                results.innerHTML += `<div class="review">${review}</div>`;
+            });
+
+        } catch (err) {
+            loader.style.display = 'none';
+            results.innerHTML = `<p style="color:red;">An error occurred: ${err.message}</p>`;
+        }
+    });
+</script>
+</body>
+</html>
